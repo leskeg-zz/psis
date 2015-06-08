@@ -2,6 +2,6 @@
 from ipdb import set_trace 
 import MySQLdb as mdb
 
-cnx = mdb.connect('127.0.0.1','root','rootREE','dri')
+con = mdb.connect('127.0.0.1','root','rootREE','dri')
 # cnx = connector.MySQLConnection(user=sys.argv[1], password=sys.argv[2], host='10.231.202.242', database='dri')
-set_trace()
+cur = con.cursor()
