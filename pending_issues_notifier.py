@@ -8,7 +8,6 @@ from ipdb import set_trace
 
 def get_data(issues, case, fetched_data, header, footer):
 	URL_BASE = 'http://10.231.202.242/dri/?q=node/'
-	mymail = 'gabriel.leske@ree.es'
 	mails_dict = {}
 	COMMAND = ''
 
