@@ -29,13 +29,15 @@ def get_data(issues, case, fetched_data, header, footer):
 		email = user[3]
 
 		if email not in mails_dict:
-			mails_dict[ email ] = 'Hola ' + username + ',\n\n' + header + email
+			mails_dict[ email ] = 'Hola ' + username + ',\n\n' + header
 
 		mails_dict[ email ] = mails_dict[ email ] + '\n' + title + ' ' + link
 
+	print '\nSe enviarán ' + case + ' emails a:'
 	for mail in mails_dict:
 		body = mails_dict[ mail ] + footer
-		COMMAND = COMMAND + 'echo "' + body + '" | mail -s "RESUMEN INCIDENCIAS P-SIS" ' + mymail + ' -- -f portalDRI@ree.es\n'
+		print mail
+		COMMAND = COMMAND + 'echo "' + body + '" | mail -s "RESUMEN INCIDENCIAS P-SIS" ' + mail + ' -- -f portalDRI@ree.es\n'
 
 	return COMMAND
 
