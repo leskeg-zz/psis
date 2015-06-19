@@ -57,14 +57,14 @@ for query in queries:
 solved = [issue for issue in fetched_data[ 'issues' ] if issue[7] == 37]
 new_or_in_process = [issue for issue in fetched_data[ 'issues' ] if issue[7] == 35 or issue[7] == 36]
 
-
-header = "Las siguientes incidencias del P-SIS creadas por ti se encuentran resueltas:\n"
-footer = "\n\nPor favor verifica su resolución y procede a su cierre o reapertura."
-COMMAND = get_data(solved, 'solved', fetched_data, header, footer)
-
 header = "Tienes las siguientes incidencias del P-SIS asignadas:\n"
 footer = "\n\nPor favor a ser posible procede a su resolución."
-COMMAND = COMMAND + get_data(new_or_in_process, 'new_or_in_process', fetched_data, header, footer)
+COMMAND = get_data(new_or_in_process, 'new_or_in_process', fetched_data, header, footer)
+
+# Disabled to Operation Department
+# header = "Las siguientes incidencias del P-SIS creadas por ti se encuentran resueltas:\n"
+# footer = "\n\nPor favor verifica su resolución y procede a su cierre o reapertura."
+# COMMAND = COMMAND + get_data(solved, 'solved', fetched_data, header, footer)
 
 ssh = subprocess.Popen(["ssh", "%s" % HOST, COMMAND], shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 ssh.stdout.readlines()
