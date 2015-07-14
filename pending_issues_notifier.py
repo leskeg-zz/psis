@@ -6,38 +6,36 @@ from mysqlconnection import cur
 import subprocess
 from ipdb import set_trace
 
-def get_data(issues, case, fetched_data, header, footer):
+def get_data(issues, fetched_data):
+	receivers = 'egarcia@ree.es,gmesquida@ree.es,jmanresa@ree.es,vbermudez@ree.es,gbonis@ree.es,gabriel.leske@ree.es,angel.moya@ree.es'
 	URL_BASE = 'http://10.231.202.242/dri/?q=node/'
 	mails_dict = {}
+	issue_counter = {}
+	usernames = {}
 	COMMAND = ''
 
 	for issue in issues:
 		nid = issue[3]
 		node = [node for node in fetched_data[ 'nodes' ] if node[0] == nid][0]
 		title = node[4]
-
-		if case == 'solved':
-			uid = node[5]
-			user = [usuario for usuario in fetched_data[ 'users' ] if usuario[0] == uid][0]
-		elif case == 'new_or_in_process':
-			uid = [node for node in fetched_data[ 'assigned' ] if node[3] == nid][0][7]
-			user = [usuario for usuario in fetched_data[ 'users' ] if usuario[0] == uid][0]
-		
+		uid = [node for node in fetched_data[ 'assigned' ] if node[3] == nid][0][7]
+		user = [usuario for usuario in fetched_data[ 'users' ] if usuario[0] == uid][0]
 		link = URL_BASE + str(nid)
-		username = user[5]
 		email = user[3]
 
 		if email not in mails_dict:
-			mails_dict[ email ] = 'Hola ' + username + ',\n\n' + header
+			mails_dict[ email ] = ''
+			issue_counter[ email ] = 0
+			usernames[ email ] = user[5]
 
 		mails_dict[ email ] = mails_dict[ email ] + '\n' + title + ' ' + link
+		issue_counter[ email ] += 1
 
-	print '\nSe enviarán ' + case + ' emails a:'
+	body = ''
 	for mail in mails_dict:
-		body = mails_dict[ mail ] + footer
-		print mail
-		COMMAND = COMMAND + 'echo "' + body + '" | mail -s "RESUMEN INCIDENCIAS P-SIS" ' + mail + ' -- -f portalDRI@ree.es\n'
+		body = body + usernames[ mail ] + ' (' + str(issue_counter[ mail ]) + '):' + mails_dict[ mail ] + '\n\n'
 
+	COMMAND = 'echo "' + body + '" | mail -s "RESUMEN INCIDENCIAS P-SIS" ' + receivers + ' -- -f portalDRI@ree.es\n'
 	return COMMAND
 
 queries = [
@@ -54,17 +52,9 @@ for query in queries:
 	cur.execute( query[0] )
 	fetched_data[ query[1] ] = cur.fetchall()
 
-solved = [issue for issue in fetched_data[ 'issues' ] if issue[7] == 37]
 new_or_in_process = [issue for issue in fetched_data[ 'issues' ] if issue[7] == 35 or issue[7] == 36]
 
-header = "Tienes las siguientes incidencias del P-SIS asignadas:\n"
-footer = "\n\nPor favor a ser posible procede a su resolución."
-COMMAND = get_data(new_or_in_process, 'new_or_in_process', fetched_data, header, footer)
-
-# Disabled to Operation Department
-# header = "Las siguientes incidencias del P-SIS creadas por ti se encuentran resueltas:\n"
-# footer = "\n\nPor favor verifica su resolución y procede a su cierre o reapertura."
-# COMMAND = COMMAND + get_data(solved, 'solved', fetched_data, header, footer)
+COMMAND = get_data(new_or_in_process, fetched_data)
 
 ssh = subprocess.Popen(["ssh", "%s" % HOST, COMMAND], shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 ssh.stdout.readlines()
