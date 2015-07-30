@@ -4,5 +4,6 @@ from psis import Psis
 import sys
 
 psis_obj = Psis(sys.argv[1],sys.argv[2])
-# set_trace()
-# psis_obj.test()
+psis_obj.average_resolving_time()
+psis_obj.issues_by_user()
+psis_obj.issues_history()

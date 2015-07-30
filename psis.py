@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from ipdb import set_trace
-from datetime import datetime 
+import datetime 
+from dateutil.relativedelta import relativedelta
 import MySQLdb as mdb
 import subprocess
 
@@ -81,10 +82,9 @@ class Psis:
 		# self.closed_issues_by_user = {}
 		closed_issues = []
 		nodes = [node for nid in self.nodes['closed_issues'] for node in self.fetched_data['nodes'] if node[0] == nid]
-		for issue in issues:
+		for issue in nodes:
 			deltatime = issue[8]-issue[7]
-			from datetime import datetime
-			closed_issues.append((datetime.fromtimestamp(issue[7]).strftime('%Y-%m-%d %H:%M:%S'),float(deltatime)/(60*60*24)))			
+			closed_issues.append((datetime.datetime.fromtimestamp(issue[7]).strftime('%Y-%m-%d %H:%M:%S'),float(deltatime)/(60*60*24)))			
 			# if deltatime < 60*60*24*90:
 			# 	uid = [assignement for assignement in self.fetched_data['solved_by'] if assignement[3] == issue[0]][0][7]
 			# 	username = self.filter_administrator( self.get_user(uid)[5] )
@@ -93,6 +93,7 @@ class Psis:
 			# 		self.closed_issues_by_user[username].append((issue[0], deltatime))
 			# 	except:
 			# 		self.closed_issues_by_user[username] = [(issue[0], deltatime)]
+		self.print_new_section("Tiempo medio")
 		for d in closed_issues:
 			print(str(d[0]) + '\t' + str(d[1]).replace('.',','))
 		# self.average_time_closed_issues_by_user = {}
@@ -132,6 +133,7 @@ class Psis:
 			else:
 				self.issues_status_by_user[username][ self.issue_states[str(state)] ] += 1
 
+		self.print_new_section("Por usuario")
 		print "{}\t{:<10}\t{:<10}\t{:<10}\t{:<10}".format('','Cerrado','Resuelto','En curso','Nuevo')
 		for k,v in self.issues_status_by_user.iteritems():
 			if k is not 'Administrador':
@@ -145,23 +147,43 @@ class Psis:
 			self.issues_status_by_user['Administrador']['new']
 		)
 
-	def issues_creation_dates(self):
-		dates = [ '1/' + datetime.fromtimestamp(node[7]).strftime('%m/%Y') for nid in self.dri_issues \
-					for node in self.fetched_data['nodes'] if node[0] == nid[3]]
-		self.cacl_monthly(dates)
+	def issues_history(self):
+		creation_dates = sorted([ datetime.datetime.fromtimestamp(node[7]).replace(day=1) for nid in self.dri_issues \
+					for node in self.fetched_data['nodes'] if node[0] == nid[3]])
 
-	def issues_solved_dates(self):
-		dates = ['1/' + datetime.fromtimestamp(node[7]).strftime('%m/%Y') for nid in self.nodes['closed_issues'] \
-				for node in self.fetched_data['nodes'] if node[0] == nid]
-		self.cacl_monthly(dates)
+		solved_dates = sorted([ datetime.datetime.fromtimestamp(node[7]).replace(day=1) for nid in self.nodes['closed_issues'] \
+				for node in self.fetched_data['nodes'] if node[0] == nid])
 
-	def cacl_monthly(self,dates):
-		issues = {}
-		for date in dates:
-			if date not in issues:
-				issues[date] = 1
-			else:
-				issues[date] += 1
+		if creation_dates < solved_dates:
+			start_date = creation_dates[0]
+		else:
+			start_date = solved_dates[0]
+		
+		init_month_his = self.month_history_gen(start_date.date())
+		self.cacl_monthly(creation_dates,solved_dates,init_month_his)
 
-		for date,value in issues.iteritems():
-			print(date + '\t' + str(value))
+	def cacl_monthly(self,creation_dates,solved_dates, init_month_his):
+		creation_his = init_month_his
+		solved_his = init_month_his.copy()
+		for date in creation_dates:
+			creation_his[date.strftime('%m/%Y')] += 1
+
+		for date in solved_dates:
+			solved_his[date.strftime('%m/%Y')] += 1
+
+		self.print_new_section("Histórico mensual")
+		for date in init_month_his:
+			print(date + '\t' + str(creation_his[date]) + '\t' + str(solved_his[date]) )
+
+	def month_history_gen(self,start_date):
+		one_mon_rel = relativedelta(months=1)
+		dict_dates = {}
+		while(start_date < datetime.date.today()):
+			dict_dates[ start_date.strftime('%m/%Y') ] = 0
+			start_date += one_mon_rel
+		return dict_dates
+
+	def print_new_section(self,text):
+		print('==================================')
+		print('\t\t' + text)
+		print('==================================')
